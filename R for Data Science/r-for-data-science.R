@@ -1,12 +1,3 @@
-# install.packages("readr", repos = "http://cran.us.r-project.org")
-# install.packages("stringr", repos = "http://cran.us.r-project.org")
-install.packages("tidyverse")
-install.packages("plotly", repos = "http://cran.us.r-project.org")
-install.packages("scales")
-install.packages("styler", repos = "http://cran.us.r-project.org")
-install.packages("kableExtra")
-install.packages("Hmisc")
-
 library(readr)
 library(stringr)
 library(ggplot2)
@@ -14,8 +5,10 @@ library(plotly)
 library(dplyr)
 library(magrittr)
 library(scales)
-library(styler)
+library(shiny)
 library(kableExtra)
+library(Hmisc)
+library(glue)
 
 urlfile <- "https://raw.githubusercontent.com/Bioinformatics-Research-Network/skill-assessments/main/R%20for%20Data%20Science/gapminder_clean.csv"
 
@@ -23,51 +16,65 @@ mydata <- read_csv(url(urlfile))
 
 names(mydata) <- str_replace_all(names(mydata), c(" " = "."))
 
-# names(mydata) <-str_replace_all(names(mydata), c(" " = ".", '\\(|\\)' = "/"))
-
-
 mydata_1962 <- mydata %>%
   filter(Year == 1962)
 
-ggplot(mydata_1962, aes(x = `CO2.emissions.(metric.tons.per.capita)`, y = gdpPercap)) +
-  geom_point() +
-  ggtitle("Year 1962") +
-  labs(y = "GDP per capita", x = "CO2 emissions (metric tons per capita)")
+plot_1962 <- ggplot(mydata_1962, aes(x = `CO2.emissions.(metric.tons.per.capita)`, y = gdpPercap)) +
+  geom_point(color = "firebrick") +
+  ggtitle("The correlation between CO2 emissions and GDP per capita in year 1962") +
+  labs(y = "GDP per capita", x = expression("CO2 emissions (metric tons per capita)")) +
+  theme(
+    axis.title.x = element_text(vjust = 0, size = 15),
+    axis.title.y = element_text(vjust = 2, size = 15),
+    axis.text = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5)
+  )
 
-# cor(mydata_1962$`CO2.emissions.(metric.tons.per.capita)`, mydata_1962$gdpPercap, use = "complete.obs")
+suppressWarnings(print(plot_1962))
 
 cor.test(mydata_1962$`CO2.emissions.(metric.tons.per.capita)`, mydata_1962$gdpPercap, )
 
+
 all_years <- unique(mydata$Year)
 
-year_cor_co2_gdp <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("Year", "Correlation"))
+year_cor_co2_gdp <- setNames(
+  data.frame(matrix(ncol = 2, nrow = 0)),
+  c("Year", "Correlation")
+)
 
 for (year in all_years) {
   subset <- mydata %>%
     filter(Year == year)
-  correlation <- cor(subset$`CO2.emissions.(metric.tons.per.capita)`, subset$gdpPercap, use = "complete.obs")
+  correlation <- cor(subset$`CO2.emissions.(metric.tons.per.capita)`,
+    subset$gdpPercap,
+    use = "complete.obs"
+  )
   year_cor_co2_gdp[nrow(year_cor_co2_gdp) + 1, ] <- c(year, correlation)
 }
 
-year_cor_co2_gdp[order(year_cor_co2_gdp$Correlation, decreasing = TRUE), ]
+year_cor_co2_gdp[order(year_cor_co2_gdp$Correlation, decreasing = TRUE), ] %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+
 
 mydata_1967 <- mydata %>%
   filter(Year == 1967)
 
 plot_1967 <- ggplot(mydata_1967, aes(x = `CO2.emissions.(metric.tons.per.capita)`, y = gdpPercap)) +
   geom_point(aes(size = pop, colour = continent)) +
-  ggtitle("Year 1967") +
-  labs(y = "GDP per capita", x = "CO2 emissions (metric tons per capita)")
+  ggtitle("The correlation between CO2 emissions and GDP per capita in year 1967") +
+  labs(y = "GDP per capita", x = "CO2 emissions (metric tons per capita)") +
+  theme(
+    axis.title.x = element_text(vjust = 0, size = 15),
+    axis.title.y = element_text(vjust = 2, size = 15),
+    axis.text = element_text(size = 10)
+  )
 
 ggplotly(plot_1967)
-
-mydata_1967$continent
 
 one_way_anova_1967 <- aov(`Energy.use.(kg.of.oil.equivalent.per.capita)` ~ continent, data = mydata_1967)
 
 summary(one_way_anova_1967)
-
-# p-value is low (p < 0.001), it appears that depending on the continent, there is a difference in energy use
 
 mydata_1990 <- mydata %>%
   filter(Year > 1990) %>%
@@ -77,10 +84,10 @@ one_way_anova_1990 <- aov(`Imports.of.goods.and.services.(%.of.GDP)` ~ continent
 
 summary(one_way_anova_1990)
 
-# There is no significant difference between Europe and Asia with respect to
-#' Imports of goods and services (% of GDP)' in the years after 1990
-
-pop_dens_avg <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("Country", "Average.population.density"))
+pop_dens_avg <- setNames(
+  data.frame(matrix(ncol = 2, nrow = 0)),
+  c("Country", "Average.population.density")
+)
 
 all_countries <- unique(mydata$Country.Name)
 
@@ -95,21 +102,29 @@ pop_dens_avg$Average.population.density <- as.numeric(as.character(pop_dens_avg$
 
 pop_dens_avg <- pop_dens_avg[order(pop_dens_avg$Average.population.density, decreasing = TRUE), ]
 
-head(pop_dens_avg)
+head(pop_dens_avg) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
 
-# Macao region in China has the highest 'Population density (people per sq. km of land area)' across all years
+first_year <- head(all_years, n = 1)
 
-head(all_years, n = 1)
+last_year <- tail(all_years, n = 1)
 
-tail(all_years, n = 1)
+print(glue("First measurment was taken in {first_year} and last one in {last_year}."))
+
 
 mydata_2007 <- mydata %>%
   filter(Year == 2007)
 
-exp_increase <- setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("Country", "Life.expectancy.increase.numerical", "Life.expectancy.increase.percentage"))
+exp_increase <- setNames(
+  data.frame(matrix(ncol = 3, nrow = 0)),
+  c(
+    "Country", "Life.exp.increase.numerical",
+    "Life.exp.increase.percentage"
+  )
+)
 
 for (country in all_countries) {
-  print(country)
   subset_1962 <- mydata_1962 %>%
     filter(Country.Name == country)
   subset_2007 <- mydata_2007 %>%
@@ -120,28 +135,17 @@ for (country in all_countries) {
     increase_num <- NA
     increase_perc <- NA
   }
-  print(increase_num)
-  print(increase_perc)
   exp_increase[nrow(exp_increase) + 1, ] <- c(country, increase_num, increase_perc)
 }
 
-exp_increase$Life.expectancy.increase.numerical <- as.numeric(as.character(exp_increase$Life.expectancy.increase.numerical))
+exp_increase$Life.exp.increase.numerical <- as.numeric(as.character(exp_increase$Life.exp.increase.numerical))
 
-exp_increase$Life.expectancy.increase.percentage <- as.numeric(as.character(exp_increase$Life.expectancy.increase.percentage))
+exp_increase$Life.exp.increase.percentage <- as.numeric(as.character(exp_increase$Life.exp.increase.percentage))
 
-head(exp_increase[order(exp_increase$Life.expectancy.increase.numerical, decreasing = TRUE), ])
+head(exp_increase[order(exp_increase$Life.exp.increase.numerical, decreasing = TRUE), ]) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
 
-
-# In the Maldives life expectancy has grown 37 years, what is a growth of 196%.
-# Bhutan life expectancy has grown 33 years, what is over 200%.
-
-plot_1962 <- ggplot(mydata_1962, aes(x=`CO2.emissions.(metric.tons.per.capita)` ,y=gdpPercap)) + 
-  geom_point(color = "firebrick") + 
-  ggtitle("Year 1962") + 
-  labs(y= "GDP per capita", x = expression("CO"[2]*" emissions (metric tons per capita)")) +
-  theme(axis.title.x = element_text(vjust = 0, size = 15),
-        axis.title.y = element_text(vjust = 2, size = 15))
-
-print(plot_1962)
-
-sum(is.na(mydata_1962$`CO2.emissions.(metric.tons.per.capita)`))
+head(exp_increase[order(exp_increase$Life.exp.increase.percentage, decreasing = TRUE), ]) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))

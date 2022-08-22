@@ -38,10 +38,11 @@ This is a report of the analysis of gapminder_clean.csv data.
 
 # Analysis of data from year 1962
 
-```{r mydata}
+```{r mydata, echo=FALSE}
 mydata_1962 <- mydata %>%
   filter(Year == 1962)
 ```
+&nbsp;
 
 
 ```{r mydata_1962, fig.align="center", echo=FALSE}
@@ -56,6 +57,11 @@ plot_1962 <- ggplot(mydata_1962, aes(x=`CO2.emissions.(metric.tons.per.capita)` 
 
 suppressWarnings(print(plot_1962))
 ```
+&nbsp;
+
+Pearson's correlation of CO2 emissions and GDP per capita in 1962 was calculated and the resuls are presented below.
+&nbsp;
+
 
 ```{r mydata_1962_correlation, echo=FALSE}
 
@@ -69,8 +75,9 @@ The correlation of 'CO2 emissions (metric tons per capita)' and gdpPercap equals
 The associated p-value equals < 2.2e-16.
 
 # In what year is the correlation between CO2 emissions and GDP per capita the strongest?
+&nbsp;
 
-```{r mydata_correlation}
+```{r mydata_correlation, echo=FALSE}
 
 all_years <- unique(mydata$Year)
 
@@ -92,6 +99,7 @@ year_cor_co2_gdp[order(year_cor_co2_gdp$Correlation, decreasing = TRUE),] %>%
 &nbsp;
 
 The correlation between 'CO2 emissions (metric tons per capita)' and gdpPercap is the strongest in the year 1967.
+&nbsp;
 
 
 ```{r mydata_1967, fig.align="center", echo=FALSE}
@@ -110,8 +118,13 @@ div(ggplotly(plot_1967), align = "center")
 ```
 
 # What is the relationship between continent and energy use?
+&nbsp;
 
-```{r energy_use_anova}
+In order to assess what is the relationship a one-way ANOVA test was performed. Results are presented below.
+&nbsp;
+
+
+```{r energy_use_anova, echo=FALSE}
 one_way_anova_1967 <- aov(`Energy.use.(kg.of.oil.equivalent.per.capita)` ~ continent, data = mydata_1967)
 
 summary(one_way_anova_1967)
@@ -122,8 +135,11 @@ The p-value is low (p < 0.001), it appears that depending on the continent, ther
 
 
 # Is there is a significant difference between Europe and Asia with respect to imports of goods and services in the years after 1990?
+&nbsp;
 
-```{r imports_anova}
+In order to assess what is the relationship a one-way ANOVA test was performed. Results are presented below.
+
+```{r imports_anova, echo=FALSE}
 mydata_1990 <- mydata %>%
   filter(Year > 1990) %>%
   filter(continent == "Europe" | continent == "Asia")
@@ -138,8 +154,9 @@ Because of high (>0.05) p-value it is concluded that there is no significant dif
 
 
 # Which country (or countries) has the highest population density across all years?
+&nbsp;
 
-```{r highest_pop_dens}
+```{r highest_pop_dens, echo=FALSE}
 pop_dens_avg <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), 
                          c("Country", "Average.population.density"))
 
@@ -165,19 +182,20 @@ head(pop_dens_avg) %>%
 Macao region in China has the highest 'Population density (people per sq. km of land area)' across all years. It is equal to 14732.035.
 
 # Which country (or countries) has shown the greatest increase in life expectancy at birth since 1962?
+&nbsp;
 
 ```{r head_tail, echo=FALSE}
 first_year <- head(all_years, n=1) 
 
 last_year <- tail(all_years, n=1) 
 
-print(glue("First year of measurment was {first_year} and last one was {last_year}."))
+print(glue("First measurment was taken in {first_year} and last one in {last_year}."))
 
 ```
 
 
 
-```{r life_exp}
+```{r life_exp, echo=FALSE}
 
 mydata_2007 <- mydata %>%
   filter(Year == 2007)
@@ -203,15 +221,29 @@ for (country in all_countries) {
 exp_increase$Life.exp.increase.numerical <- as.numeric(as.character(exp_increase$Life.exp.increase.numerical))
 
 exp_increase$Life.exp.increase.percentage <- as.numeric(as.character(exp_increase$Life.exp.increase.percentage))
+```
+&nbsp;
 
+The table below shows table ordered in descending order by column containing numerical life expectancy increase. 
+&nbsp;
+
+```{r life_exp_numerical, echo=FALSE}
 head(exp_increase[order(exp_increase$Life.exp.increase.numerical, decreasing = TRUE),]) %>%
-  kbl() %>%
-  kable_material(c("striped", "hover"))
-
-head(exp_increase[order(exp_increase$Life.exp.increase.percentage, decreasing = TRUE),]) %>%
   kbl() %>%
   kable_material(c("striped", "hover"))
 ```
 &nbsp;
 
-In the Maldives life expectancy has grown by 37 years, what is a growth of 196%. Bhutan life expectancy has grown by 33 years, what is over 200%. 
+The table below shows table ordered in descending order by column containing percentage life expectancy increase. 
+&nbsp;
+
+```{r life_exp_percentage, echo=FALSE}
+head(exp_increase[order(exp_increase$Life.exp.increase.percentage, decreasing = TRUE),]) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+
+
+&nbsp;
+
+In the Maldives life expectancy has grown by 37 years, what is a growth of 196%. In Bhutan life expectancy has grown by 33 years, what is over 200%. 
