@@ -1,7 +1,3 @@
-# install.packages("glue", repos = "http://cran.us.r-project.org")
-# install.packages("dplyr", repos = "http://cran.us.r-project.org")
-install.packages("lintr", repos = "http://cran.us.r-project.org")
-lintr::lint()
 library(glue)
 suppressMessages(library(dplyr))
 
