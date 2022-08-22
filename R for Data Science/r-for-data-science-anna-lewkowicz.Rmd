@@ -1,0 +1,217 @@
+---
+title: "R for Data Science Skill Assessment"
+author: "Anna Lewkowicz"
+date: "2022-08-20"
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library (readr)
+library(stringr)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(magrittr)
+library(scales)
+library(shiny)
+library(kableExtra)
+library(Hmisc)
+library(glue)
+
+urlfile="https://raw.githubusercontent.com/Bioinformatics-Research-Network/skill-assessments/main/R%20for%20Data%20Science/gapminder_clean.csv"
+
+mydata<-read_csv(url(urlfile))
+
+names(mydata) <-str_replace_all(names(mydata), c(" " = "." ))
+```
+&nbsp;
+
+This is a report of the analysis of gapminder_clean.csv data.
+
+# Analysis of data from year 1962
+
+```{r mydata}
+mydata_1962 <- mydata %>%
+  filter(Year == 1962)
+```
+
+
+```{r mydata_1962, fig.align="center", echo=FALSE}
+plot_1962 <- ggplot(mydata_1962, aes(x=`CO2.emissions.(metric.tons.per.capita)` ,y=gdpPercap)) + 
+  geom_point(color = "firebrick") + 
+  ggtitle("The correlation between CO2 emissions and GDP per capita in year 1962") + 
+  labs(y= "GDP per capita", x = expression("CO2 emissions (metric tons per capita)")) +
+  theme(axis.title.x = element_text(vjust = 0, size = 15),
+        axis.title.y = element_text(vjust = 2, size = 15),
+        axis.text = element_text(size = 10),
+        plot.title = element_text(hjust = 0.5))
+
+suppressWarnings(print(plot_1962))
+```
+
+```{r mydata_1962_correlation, echo=FALSE}
+
+cor.test(mydata_1962$`CO2.emissions.(metric.tons.per.capita)`, mydata_1962$gdpPercap,)
+
+```
+&nbsp;
+
+The correlation of 'CO2 emissions (metric tons per capita)' and gdpPercap equals 0.9260817. 
+
+The associated p-value equals < 2.2e-16.
+
+# In what year is the correlation between CO2 emissions and GDP per capita the strongest?
+
+```{r mydata_correlation}
+
+all_years <- unique(mydata$Year)
+
+year_cor_co2_gdp <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), 
+                             c("Year", "Correlation"))
+
+for (year in all_years) {
+  subset <- mydata %>%
+    filter(Year == year)
+  correlation <- cor(subset$`CO2.emissions.(metric.tons.per.capita)`, 
+                     subset$gdpPercap, use = "complete.obs")
+  year_cor_co2_gdp[nrow(year_cor_co2_gdp) + 1,] <- c(year, correlation)
+}
+
+year_cor_co2_gdp[order(year_cor_co2_gdp$Correlation, decreasing = TRUE),] %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+&nbsp;
+
+The correlation between 'CO2 emissions (metric tons per capita)' and gdpPercap is the strongest in the year 1967.
+
+
+```{r mydata_1967, fig.align="center", echo=FALSE}
+
+mydata_1967 <- mydata %>%
+  filter(Year == 1967)
+
+plot_1967 <- ggplot(mydata_1967, aes(x=`CO2.emissions.(metric.tons.per.capita)` ,y=gdpPercap)) + 
+  geom_point(aes(size = pop, colour = continent)) + 
+  ggtitle("The correlation between CO2 emissions and GDP per capita in year 1967") + 
+  labs(y= "GDP per capita", x = "CO2 emissions (metric tons per capita)") +
+  theme(axis.title.x = element_text(vjust = 0, size = 15),
+        axis.title.y = element_text(vjust = 2, size = 15),
+        axis.text = element_text(size = 10)) 
+div(ggplotly(plot_1967), align = "center")
+```
+
+# What is the relationship between continent and energy use?
+
+```{r energy_use_anova}
+one_way_anova_1967 <- aov(`Energy.use.(kg.of.oil.equivalent.per.capita)` ~ continent, data = mydata_1967)
+
+summary(one_way_anova_1967)
+```
+&nbsp;
+
+The p-value is low (p < 0.001), it appears that depending on the continent, there is a difference in energy use.
+
+
+# Is there is a significant difference between Europe and Asia with respect to imports of goods and services in the years after 1990?
+
+```{r imports_anova}
+mydata_1990 <- mydata %>%
+  filter(Year > 1990) %>%
+  filter(continent == "Europe" | continent == "Asia")
+
+one_way_anova_1990 <- aov(`Imports.of.goods.and.services.(%.of.GDP)` ~ continent, data = mydata_1967)
+
+summary(one_way_anova_1990)
+```
+&nbsp;
+
+Because of high (>0.05) p-value it is concluded that there is no significant difference between Europe and Asia with respect to 'Imports of goods and services (% of GDP)' in the years after 1990.
+
+
+# Which country (or countries) has the highest population density across all years?
+
+```{r highest_pop_dens}
+pop_dens_avg <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), 
+                         c("Country", "Average.population.density"))
+
+all_countries <- unique(mydata$Country.Name)
+  
+for (country in all_countries) {
+  subset <- mydata %>%
+    filter(Country.Name == country)
+  average <- mean(as.numeric(subset$`Population.density.(people.per.sq..km.of.land.area)`), na.rm=TRUE)
+  pop_dens_avg[nrow(pop_dens_avg) + 1,] <- c(country, average)
+}
+
+pop_dens_avg$Average.population.density <- as.numeric(as.character(pop_dens_avg$Average.population.density))
+
+pop_dens_avg <- pop_dens_avg[order(pop_dens_avg$Average.population.density, decreasing = TRUE),]  
+
+head(pop_dens_avg) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+&nbsp;
+
+Macao region in China has the highest 'Population density (people per sq. km of land area)' across all years. It is equal to 14732.035.
+
+# Which country (or countries) has shown the greatest increase in life expectancy at birth since 1962?
+
+```{r head_tail, echo=FALSE}
+first_year <- head(all_years, n=1) 
+
+last_year <- tail(all_years, n=1) 
+
+print(glue("First year of measurment was {first_year} and last one was {last_year}."))
+
+```
+
+
+
+```{r life_exp}
+
+mydata_2007 <- mydata %>%
+  filter(Year == 2007)
+
+exp_increase <- setNames(data.frame(matrix(ncol = 3, nrow = 0)), 
+                         c("Country", "Life.exp.increase.numerical", 
+                           "Life.exp.increase.percentage"))
+
+for (country in all_countries) {
+  subset_1962 <- mydata_1962 %>%
+    filter(Country.Name == country)
+  subset_2007 <- mydata_2007 %>%
+    filter(Country.Name == country)
+  increase_num <- subset_2007$`Life.expectancy.at.birth,.total.(years)` - subset_1962$`Life.expectancy.at.birth,.total.(years)`
+  increase_perc <- round(subset_2007$`Life.expectancy.at.birth,.total.(years)` / subset_1962$`Life.expectancy.at.birth,.total.(years)`*100, digits=1)
+  if (length(increase_num)==0) {
+    increase_num <- NA
+    increase_perc <- NA
+  }
+  exp_increase[nrow(exp_increase) + 1,] <- c(country, increase_num, increase_perc)
+}
+
+exp_increase$Life.exp.increase.numerical <- as.numeric(as.character(exp_increase$Life.exp.increase.numerical))
+
+exp_increase$Life.exp.increase.percentage <- as.numeric(as.character(exp_increase$Life.exp.increase.percentage))
+
+head(exp_increase[order(exp_increase$Life.exp.increase.numerical, decreasing = TRUE),]) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+
+head(exp_increase[order(exp_increase$Life.exp.increase.percentage, decreasing = TRUE),]) %>%
+  kbl() %>%
+  kable_material(c("striped", "hover"))
+```
+&nbsp;
+
+In the Maldives life expectancy has grown by 37 years, what is a growth of 196%. Bhutan life expectancy has grown by 33 years, what is over 200%. 
