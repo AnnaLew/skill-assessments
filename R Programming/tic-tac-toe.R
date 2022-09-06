@@ -65,7 +65,7 @@ questions_player_move <- function(player_sign) {
   cat(glue("\nPlayer {player_sign} turn:"))
   cat("\n\nWhat row? ")
   row_number <- as.integer(readLines(con = con, n = 1))
-  while (!(is_correct_number(row_number))) {
+  while (is.na(row_number) || !(is_correct_number(row_number))) {
     cat("Enter row number again:")
     row_number <- as.integer(readLines(con = con, n = 1))
   }
@@ -83,9 +83,9 @@ questions_player_move <- function(player_sign) {
 
 player_move <- function(board) {
   move_data <- questions_player_move(player_sign)
-  Sys.sleep(2)
+  Sys.sleep(1)
   while (move_data$correct != "y" || !is.na(board[move_data$row, move_data$column])) {
-    print("Choose again!")
+    print("This place is occupied, you have to choose again.")
     move_data <- questions_player_move(player_sign)
   }
   board[move_data$row, move_data$column] <- player_sign
@@ -97,7 +97,7 @@ player_move <- function(board) {
 generate_game_turn <- function() {
   move <- FALSE
   cat(glue("\nPlayer {game_sign} turn:"))
-  while (move == FALSE) {
+  while (!move) {
     rand_row <- sample(1:3, 1)
     rand_col <- sample(1:3, 1)
     if (is.na(board[rand_row, rand_col])) {
@@ -147,17 +147,20 @@ game_over <- function(board) {
           return(FALSE)
         }
       }
-    } else if (!is.na(board[1, 1]) && !is.na(board[2, 2]) && !is.na(board[3, 3]) && !is.na(board[3, 1]) && !is.na(board[1, 3])) {
-      if (board[1, 1] == board[2, 2] && board[2, 2] == board[3, 3] && board[2, 2] == player_sign) {
+    }
+  }
+  if (!is.na(board[2, 2])) {
+    if (length(unique(c(board[1, 1], board[2, 2], board[3, 3]))) == 1 || length(unique(c(board[3, 1], board[2, 2], board[1, 3]))) == 1) {
+      if (board[2, 2] == player_sign) {
         print("You won!")
         return(FALSE)
-      } else if (board[3, 1] == board[2, 2] && board[2, 2] == board[1, 3] && board[2, 2] == player_sign) {
-        print("You won!")
-        return(FALSE)
-      } else {
+      } else if (board[2, 2] == game_sign) {
         print("You lost!")
         return(FALSE)
       }
+    } else if (!any(is.na(board))) {
+      print("Game over, no more space left!")
+      return(FALSE)
     }
   }
   return(TRUE)
@@ -184,24 +187,28 @@ game_on <- TRUE
 
 while (game_on) {
   round_number <- print_round_number(round_number)
-  Sys.sleep(2)
+  Sys.sleep(1)
   current_board_display()
   if (player_sign == "X") {
-    Sys.sleep(2)
+    Sys.sleep(1)
     board <- player_move(board)
-    Sys.sleep(2)
+    Sys.sleep(1)
     current_board_display()
-    Sys.sleep(2)
+    game_on <- game_over(board)
+    if (!game_on) {
+      break
+    }
+    Sys.sleep(1)
     board <- generate_game_turn()
   } else {
     board <- generate_game_turn()
-    Sys.sleep(2)
+    Sys.sleep(1)
     current_board_display()
     game_on <- game_over(board)
-    if (game_on == FALSE) {
+    if (!game_on) {
       break
     }
-    Sys.sleep(2)
+    Sys.sleep(1)
     board <- player_move(board)
   }
   current_board_display()
