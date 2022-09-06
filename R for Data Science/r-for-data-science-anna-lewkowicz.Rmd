@@ -4,16 +4,17 @@ author: "Anna Lewkowicz"
 date: "2022-08-20"
 output:
   html_document:
+    code_folding: hide
     theme: united
     highlight: tango
     toc: true
-    toc_depth: 2
     toc_float: true
     number_sections: true
 ---
 
-```{r setup, include=FALSE}
+```{r setup, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 library (readr)
 library(stringr)
 library(ggplot2)
@@ -45,7 +46,7 @@ mydata_1962 <- mydata %>%
 &nbsp;
 
 
-```{r mydata_1962, fig.align="center", echo=FALSE}
+```{r mydata_1962, fig.align="center", warning=FALSE, message=FALSE}
 plot_1962 <- ggplot(mydata_1962, aes(x=`CO2.emissions.(metric.tons.per.capita)` ,y=gdpPercap)) + 
   geom_point(color = "firebrick") + 
   ggtitle("The correlation between CO2 emissions and GDP per capita in year 1962") + 
@@ -55,7 +56,7 @@ plot_1962 <- ggplot(mydata_1962, aes(x=`CO2.emissions.(metric.tons.per.capita)` 
         axis.text = element_text(size = 10),
         plot.title = element_text(hjust = 0.5))
 
-suppressWarnings(print(plot_1962))
+print(plot_1962)
 ```
 &nbsp;
 
@@ -63,7 +64,7 @@ Pearson's correlation of CO2 emissions and GDP per capita in 1962 was calculated
 &nbsp;
 
 
-```{r mydata_1962_correlation, echo=FALSE}
+```{r mydata_1962_correlation}
 
 cor.test(mydata_1962$`CO2.emissions.(metric.tons.per.capita)`, mydata_1962$gdpPercap,)
 
@@ -77,7 +78,7 @@ The associated p-value equals < 2.2e-16.
 # In what year is the correlation between CO2 emissions and GDP per capita the strongest?
 &nbsp;
 
-```{r mydata_correlation, echo=FALSE}
+```{r mydata_correlation}
 
 all_years <- unique(mydata$Year)
 
@@ -102,7 +103,7 @@ The correlation between 'CO2 emissions (metric tons per capita)' and gdpPercap i
 &nbsp;
 
 
-```{r mydata_1967, fig.align="center", echo=FALSE}
+```{r mydata_1967, fig.align="center"}
 
 mydata_1967 <- mydata %>%
   filter(Year == 1967)
@@ -120,11 +121,11 @@ div(ggplotly(plot_1967), align = "center")
 # What is the relationship between continent and energy use?
 &nbsp;
 
-In order to assess what is the relationship a one-way ANOVA test was performed. Results are presented below.
-&nbsp;
+One-way ANOVA was chosen to determine what is the relationship between continent and energy use. It was chosen because the examined data had one categorical independent variable (continent) that had multiple levels (Asia, Europe, Africa, Americas, Oceania) and one quantitative dependent variable (energy use). 
 
+Results are presented below.
 
-```{r energy_use_anova, echo=FALSE}
+```{r energy_use_anova}
 one_way_anova_1967 <- aov(`Energy.use.(kg.of.oil.equivalent.per.capita)` ~ continent, data = mydata_1967)
 
 summary(one_way_anova_1967)
@@ -137,16 +138,18 @@ The p-value is low (p < 0.001), it appears that depending on the continent, ther
 # Is there is a significant difference between Europe and Asia with respect to imports of goods and services in the years after 1990?
 &nbsp;
 
-In order to assess what is the relationship a one-way ANOVA test was performed. Results are presented below.
+Because two groups (Europe and Asia) were being compared, t-test was chosen to assess whether there is a significant difference between Europe and Asia with respect to imports of goods and services in the years after 1990.
 
-```{r imports_anova, echo=FALSE}
+Results are presented below.
+
+```{r imports_anova}
 mydata_1990 <- mydata %>%
   filter(Year > 1990) %>%
   filter(continent == "Europe" | continent == "Asia")
 
-one_way_anova_1990 <- aov(`Imports.of.goods.and.services.(%.of.GDP)` ~ continent, data = mydata_1967)
+ttest_1990 <- t.test(`Imports.of.goods.and.services.(%.of.GDP)` ~ continent, data = mydata_1990)
 
-summary(one_way_anova_1990)
+ttest_1990
 ```
 &nbsp;
 
@@ -156,7 +159,7 @@ Because of high (>0.05) p-value it is concluded that there is no significant dif
 # Which country (or countries) has the highest population density across all years?
 &nbsp;
 
-```{r highest_pop_dens, echo=FALSE}
+```{r highest_pop_dens}
 pop_dens_avg <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), 
                          c("Country", "Average.population.density"))
 
@@ -184,7 +187,7 @@ Macao region in China has the highest 'Population density (people per sq. km of 
 # Which country (or countries) has shown the greatest increase in life expectancy at birth since 1962?
 &nbsp;
 
-```{r head_tail, echo=FALSE}
+```{r head_tail}
 first_year <- head(all_years, n=1) 
 
 last_year <- tail(all_years, n=1) 
@@ -195,7 +198,7 @@ print(glue("First measurment was taken in {first_year} and last one in {last_yea
 
 
 
-```{r life_exp, echo=FALSE}
+```{r life_exp}
 
 mydata_2007 <- mydata %>%
   filter(Year == 2007)
@@ -227,7 +230,7 @@ exp_increase$Life.exp.increase.percentage <- as.numeric(as.character(exp_increas
 The table below shows table ordered in descending order by column containing numerical life expectancy increase. 
 &nbsp;
 
-```{r life_exp_numerical, echo=FALSE}
+```{r life_exp_numerical}
 head(exp_increase[order(exp_increase$Life.exp.increase.numerical, decreasing = TRUE),]) %>%
   kbl() %>%
   kable_material(c("striped", "hover"))
@@ -237,7 +240,7 @@ head(exp_increase[order(exp_increase$Life.exp.increase.numerical, decreasing = T
 The table below shows table ordered in descending order by column containing percentage life expectancy increase. 
 &nbsp;
 
-```{r life_exp_percentage, echo=FALSE}
+```{r life_exp_percentage}
 head(exp_increase[order(exp_increase$Life.exp.increase.percentage, decreasing = TRUE),]) %>%
   kbl() %>%
   kable_material(c("striped", "hover"))
